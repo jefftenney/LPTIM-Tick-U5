@@ -78,7 +78,21 @@
 #define configCHECK_FOR_STACK_OVERFLOW           2
 #define configUSE_MALLOC_FAILED_HOOK             1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION  0
+
+//      Define configUSE_TICKLESS_IDLE to 0 to disable tickless idle, 1 to enable the default tickless
+// implementation from FreeRTOS, and 2 to enable the custom tickless implementation in lptimTick.c.
+//
 #define configUSE_TICKLESS_IDLE                  2
+
+//      If you define configSYSTICK_CLOCK_HZ, it must be one of these two values.  If you don't define it,
+// FreeRTOS will configure the SysTick to use the full CPU clock rate.  Either way, FreeRTOS calculates tick
+// timing accordingly.  Code in main.c automatically configures the RCC to route the appropriate clock to the
+// SysTick based on the value of this symbol.
+//
+//      Note that FreeRTOS ignores this symbol when configUSE_TICKLESS_IDLE is 2.
+//
+// #define configSYSTICK_CLOCK_HZ                   (32768UL)
+// #define configSYSTICK_CLOCK_HZ                   (configCPU_CLOCK_HZ / 8UL)
 
   /* Defaults to size_t for backward compatibility, but can be changed
    if lengths will always be less than the number of bytes in a size_t. */

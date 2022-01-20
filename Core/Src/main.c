@@ -110,7 +110,7 @@ static void vSetDemoState( BaseType_t state )
    if (state == DEMO_STATE_TEST_1)
    {
       //      Demonstrate minimum energy consumption.  With configUSE_TICKLESS_IDLE == 2 (lptimTick.c), we
-      // draw only 2uA, with RTC, and with FreeRTOS timers/timeouts/delays active.
+      // draw only 9uA, with full RAM retention, with RTC, and with FreeRTOS timers/timeouts/delays active.
       //
       ledIntervalMs = 5000UL;
       vTttSetEvalInterval( portMAX_DELAY );
@@ -285,6 +285,16 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+
+  #if (configSYSTICK_CLOCK_HZ == LSE_VALUE)
+  {
+    //      Select the 32kHz LSE clock as the "other" SysTick clock.  FreeRTOS selects this "other" clock for
+    // SysTick when we define configSYSTICK_CLOCK_HZ.  The default section for the "other" clock after reset
+    // is the CPU clock divided by 8.
+    //
+    MODIFY_REG(RCC->CCIPR1, RCC_CCIPR1_SYSTICKSEL_Msk, RCC_CCIPR1_SYSTICKSEL_1);
+  }
+  #endif
 
   vUlpInit();
 
