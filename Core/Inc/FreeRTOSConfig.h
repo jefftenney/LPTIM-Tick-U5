@@ -82,7 +82,7 @@
 //      Define configUSE_TICKLESS_IDLE to 0 to disable tickless idle, 1 to enable the default tickless
 // implementation from FreeRTOS, and 2 to enable the custom tickless implementation in lptimTick.c.
 //
-#define configUSE_TICKLESS_IDLE                  2
+#define configUSE_TICKLESS_IDLE                  1
 
 //      If you define configSYSTICK_CLOCK_HZ, it must be one of these two values.  If you don't define it,
 // FreeRTOS will configure the SysTick to use the full CPU clock rate.  Either way, FreeRTOS calculates tick
