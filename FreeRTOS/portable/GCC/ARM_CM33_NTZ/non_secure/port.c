@@ -546,11 +546,11 @@ PRIVILEGED_DATA static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
                 {
                     /* If the SysTick is not using the core clock, the current-
                      * value register might still be zero here.  In that case, the
-                     * SysTick didn't load from the reload register, and there are
-                     * ulReloadValue + 1 decrements remaining, not zero. */
+                     * SysTick didn't load from the reload register, so we count
+                     * ulReloadValue decrements remaining, not zero. */
                     if( ulSysTickDecrementsLeft == 0 )
                     {
-                        ulSysTickDecrementsLeft = ulReloadValue + 1UL;
+                        ulSysTickDecrementsLeft = ulReloadValue;
                     }
                 }
                 #endif /* portNVIC_SYSTICK_CLK_BIT_CONFIG */
