@@ -254,7 +254,7 @@
 /**
  * @brief Let the user override the default SysTick clock rate.  If defined by the
  * user, this symbol must equal the SysTick clock rate when the CLK bit is 0 in the
- * configuration register. 
+ * configuration register.
  */
 #ifndef configSYSTICK_CLOCK_HZ
     #define configSYSTICK_CLOCK_HZ            ( configCPU_CLOCK_HZ )
@@ -522,7 +522,7 @@ PRIVILEGED_DATA static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
                  * underflowed because the post sleep hook did something
                  * that took too long or because the SysTick current-value register
                  * is zero. */
-                if( ( ulCalculatedLoadValue < ulStoppedTimerCompensation ) || ( ulCalculatedLoadValue > ulTimerCountsForOneTick ) )
+                if( ( ulCalculatedLoadValue <= ulStoppedTimerCompensation ) || ( ulCalculatedLoadValue > ulTimerCountsForOneTick ) )
                 {
                     ulCalculatedLoadValue = ( ulTimerCountsForOneTick - 1UL );
                 }
@@ -546,8 +546,9 @@ PRIVILEGED_DATA static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
                 {
                     /* If the SysTick is not using the core clock, the current-
                      * value register might still be zero here.  In that case, the
-                     * SysTick didn't load from the reload register, so we count
-                     * ulReloadValue decrements remaining, not zero. */
+                     * SysTick didn't load from the reload register, and there are
+                     * ulReloadValue decrements remaining in the expected idle
+                     * time, not zero. */
                     if( ulSysTickDecrementsLeft == 0 )
                     {
                         ulSysTickDecrementsLeft = ulReloadValue;
@@ -587,6 +588,12 @@ PRIVILEGED_DATA static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
                 /* The temporary usage of the core clock has served its purpose,
                  * as described above.  Resume usage of the other clock. */
                 portNVIC_SYSTICK_CTRL_REG = portNVIC_SYSTICK_CLK_BIT | portNVIC_SYSTICK_INT_BIT;
+                if( ( portNVIC_SYSTICK_CTRL_REG & portNVIC_SYSTICK_COUNT_FLAG_BIT ) != 0 )
+                {
+                    /* The partial tick period already ended.  Be sure the SysTick
+                     * counts it only once. */
+                    portNVIC_SYSTICK_CURRENT_VALUE_REG = 0;
+                }
                 portNVIC_SYSTICK_LOAD_REG = ulTimerCountsForOneTick - 1UL;
                 portNVIC_SYSTICK_CTRL_REG = portNVIC_SYSTICK_CLK_BIT_CONFIG | portNVIC_SYSTICK_INT_BIT | portNVIC_SYSTICK_ENABLE_BIT;
             }
