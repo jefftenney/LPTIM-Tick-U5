@@ -289,7 +289,7 @@ int main(void)
   #if (configSYSTICK_CLOCK_HZ == LSE_VALUE)
   {
     //      Select the 32kHz LSE clock as the "other" SysTick clock.  FreeRTOS selects this "other" clock for
-    // SysTick when we define configSYSTICK_CLOCK_HZ.  The default section for the "other" clock after reset
+    // SysTick when we define configSYSTICK_CLOCK_HZ.  The default selection for the "other" clock after reset
     // is the CPU clock divided by 8.
     //
     MODIFY_REG(RCC->CCIPR1, RCC_CCIPR1_SYSTICKSEL_Msk, RCC_CCIPR1_SYSTICKSEL_1);
@@ -707,11 +707,6 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
    BaseType_t xWasHigherPriorityTaskWoken = pdFALSE;
    xTaskNotifyFromISR( mainTaskHandle, 0, eNoAction, &xWasHigherPriorityTaskWoken);
    portYIELD_FROM_ISR(xWasHigherPriorityTaskWoken);
-}
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
-{
-   Error_Handler();
 }
 
 void vApplicationMallocFailedHook( void )

@@ -1,4 +1,4 @@
-// Test FreeRTOS Tick Timing on STM32L4 (testTickTiming.c)
+// Test FreeRTOS Tick Timing on STM32U5 (testTickTiming.c)
 //
 // o Generates a new TttResults_t every tttTEST_DURATION_SECONDS unless disabled.
 // o Disable with vTttSetEvalInterval( portMAX_DELAY );
@@ -214,7 +214,7 @@ static void ingestTimePair( const rtcSnapshotT* rtcTime, TickType_t tickCount )
 
          //      Execute the callback function (if any).
          //
-         #if configUSE_TICK_TEST_COMPLETE_HOOK != 0
+         #if ( configUSE_TICK_TEST_COMPLETE_HOOK != 0 )
          {
             vApplicationTickTestComplete();
          }
