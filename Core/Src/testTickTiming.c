@@ -99,6 +99,17 @@ void vTttOsTask( void* argument )
    //
    configASSERT(config.subsecondsPerSecond / configTICK_RATE_HZ >= 4UL)
 
+   //      If we're using SysTick as the tick source, then set it for the highest allowed priority.  This
+   // way our "measurements" of the tick timing accuracy won't be delayed by other interrupt handlers.
+   // If we're using a different timer as the tick source, then that tick implementation provides its own
+   // setting for the tick interrupt priority.
+   //
+   #if (configUSE_TICKLESS_IDLE != 2)
+   {
+      NVIC_SetPriority(SysTick_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+   }
+   #endif
+
    //      Be sure the RTC ignores its input clock when the debugger stops program execution.
    //
    taskDISABLE_INTERRUPTS();
