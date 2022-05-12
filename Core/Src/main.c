@@ -272,6 +272,10 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  /** Disable the internal Pull-Up in Dead Battery pins of UCPD peripheral
+  */
+  HAL_PWREx_DisableUCPDDeadBattery();
+
   /* USER CODE BEGIN Init */
 
   //      Correct a bug in CubeMX.  We selected MSIS auto-calibration (not MSIK), but CubeMX fails to set
