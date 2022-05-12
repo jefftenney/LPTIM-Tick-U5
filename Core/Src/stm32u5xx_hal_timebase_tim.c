@@ -44,11 +44,7 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   uint32_t              uwTimclock = 0;
   uint32_t              uwPrescalerValue = 0;
   uint32_t              pFLatency;
-  /*Configure the TIM17 IRQ priority */
-  HAL_NVIC_SetPriority(TIM17_IRQn, TickPriority ,0);
-
-  /* Enable the TIM17 global Interrupt */
-  HAL_NVIC_EnableIRQ(TIM17_IRQn);
+  HAL_StatusTypeDef     status;
 
   /* Enable TIM17 clock */
   __HAL_RCC_TIM17_CLK_ENABLE();
@@ -75,14 +71,29 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   htim17.Init.ClockDivision = 0;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
 
-  if(HAL_TIM_Base_Init(&htim17) == HAL_OK)
+  status = HAL_TIM_Base_Init(&htim17);
+  if (status == HAL_OK)
   {
     /* Start the TIM time Base generation in interrupt mode */
-    return HAL_TIM_Base_Start_IT(&htim17);
+    status = HAL_TIM_Base_Start_IT(&htim17);
+    if (status == HAL_OK)
+    {
+      if (TickPriority < (1UL << __NVIC_PRIO_BITS))
+      {
+        /* Enable the TIM17 global Interrupt */
+        HAL_NVIC_SetPriority(TIM17_IRQn, TickPriority, 0U);
+        uwTickPrio = TickPriority;
+      }
+      else
+      {
+        status = HAL_ERROR;
+      }
+    }
   }
-
-  /* Return function status */
-  return HAL_ERROR;
+  /* Enable the TIM17 global Interrupt */
+  HAL_NVIC_EnableIRQ(TIM17_IRQn);
+ /* Return function status */
+  return status;
 }
 
 /**
