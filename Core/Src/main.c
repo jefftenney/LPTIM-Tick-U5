@@ -620,6 +620,9 @@ static void mainOsTask(void* argument)
    // required by the HAL even after FreeRTOS has control.  It's still best to stop the timer here, and then
    // define HAL_GetTick() and HAL_Delay() to use the FreeRTOS tick (and delay) once available.
    //
+   //      We don't call HAL_SuspendTick() here because that function leaves TIM17 enabled and running for no
+   // reason.
+   //
    TIM17->CR1 &= ~TIM_CR1_CEN;  // wish CubeMX would generate a symbol for the HAL tick timer
 
    //      Be sure LPTIM3 ignores its input clock when the debugger stops program execution, and be sure its
@@ -630,7 +633,7 @@ static void mainOsTask(void* argument)
    RCC->SRDAMR |= RCC_SRDAMR_LPTIM3AMEN;
    taskENABLE_INTERRUPTS();
 
-   //      Start the demo in state 0.
+   //      Start the demo on test 1.
    //
    BaseType_t xDemoState = DEMO_STATE_TEST_1;
    vSetDemoState(xDemoState);
