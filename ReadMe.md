@@ -25,19 +25,19 @@ Tests 2 and 3 display live test results to a serial terminal.  Connect to the ST
 ## Test Results
 *Current readings shown are averages, *not* including the LED*
 
-__With lptimTick.c (STOP mode per ulp.c)__
+__With lptimTick.c (`configUSE_TICKLESS_IDLE 2`)__
 
 - Test 1: 9μA, no drift
 - Test 2: 35μA, no drift
 - Test 3: 57μA, no drift
 
-__Default tickless idle (FreeRTOS 10.4.6)__
+__Default tickless idle (`configUSE_TICKLESS_IDLE 1`)__
 
 - Test 1: 0.49mA, trivial drift
 - Test 2: 0.50mA, trivial drift
 - Test 3: 0.51mA, drift via 1ms "jumps" -- resolved by kernel PR59
 
-__Tickless disabled (FreeRTOS 10.4.6)__
+__Tickless disabled (`configUSE_TICKLESS_IDLE 0`)__
 
 - Test 1: 1.21mA, no drift
 - Test 2: 1.21mA, no drift
