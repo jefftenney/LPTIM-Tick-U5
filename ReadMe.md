@@ -35,7 +35,7 @@ __Default tickless idle (`configUSE_TICKLESS_IDLE 1`)__
 
 - Test 1: 0.49mA, trivial drift
 - Test 2: 0.50mA, trivial drift
-- Test 3: 0.51mA, drift via 1ms "jumps" -- resolved by kernel PR59
+- Test 3: 0.51mA, trivial drift (with kernel v10.5.1 or newer)
 
 __Tickless disabled (`configUSE_TICKLESS_IDLE 0`)__
 
