@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * FreeRTOS Kernel V10.5.1
  * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * SPDX-License-Identifier: MIT
@@ -53,10 +53,10 @@
  * The tskKERNEL_VERSION_MAJOR, tskKERNEL_VERSION_MINOR, tskKERNEL_VERSION_BUILD
  * values will reflect the last released version number.
  */
-#define tskKERNEL_VERSION_NUMBER       "V10.4.4+"
+#define tskKERNEL_VERSION_NUMBER       "V10.5.1"
 #define tskKERNEL_VERSION_MAJOR        10
-#define tskKERNEL_VERSION_MINOR        4
-#define tskKERNEL_VERSION_BUILD        4
+#define tskKERNEL_VERSION_MINOR        5
+#define tskKERNEL_VERSION_BUILD        1
 
 /* MPU region parameters passed in ulParameters
  * of MemoryRegion_t struct. */
@@ -628,7 +628,7 @@ typedef enum
  *  // Create a task from the const structure defined above.  The task handle
  *  // is requested (the second parameter is not NULL) but in this case just for
  *  // demonstration purposes as its not actually used.
- *  xTaskCreateRestricted( &xRegTest1Parameters, &xHandle );
+ *  xTaskCreateRestrictedStatic( &xRegTest1Parameters, &xHandle );
  *
  *  // Start the scheduler.
  *  vTaskStartScheduler();
@@ -690,7 +690,7 @@ typedef enum
  *  // defined or shared regions have been declared elsewhere).
  * }
  * @endcode
- * \defgroup xTaskCreateRestricted xTaskCreateRestricted
+ * \defgroup vTaskAllocateMPURegions vTaskAllocateMPURegions
  * \ingroup Tasks
  */
 void vTaskAllocateMPURegions( TaskHandle_t xTask,
@@ -865,10 +865,10 @@ BaseType_t xTaskDelayUntil( TickType_t * const pxPreviousWakeTime,
  * vTaskDelayUntil() is the older version of xTaskDelayUntil() and does not
  * return a value.
  */
-#define vTaskDelayUntil( pxPreviousWakeTime, xTimeIncrement )           \
-    {                                                                   \
-        ( void ) xTaskDelayUntil( pxPreviousWakeTime, xTimeIncrement ); \
-    }
+#define vTaskDelayUntil( pxPreviousWakeTime, xTimeIncrement )                   \
+    do {                                                                        \
+        ( void ) xTaskDelayUntil( ( pxPreviousWakeTime ), ( xTimeIncrement ) ); \
+    } while( 0 )
 
 
 /**
@@ -1000,7 +1000,7 @@ eTaskState eTaskGetState( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
  * filled with information about the task referenced by the handle passed using
  * the xTask parameter.
  *
- * @xGetFreeStackSpace The TaskStatus_t structure contains a member to report
+ * @param xGetFreeStackSpace The TaskStatus_t structure contains a member to report
  * the stack high water mark of the task being queried.  Calculating the stack
  * high water mark takes a relatively long time, and can make the system
  * temporarily unresponsive - so the xGetFreeStackSpace parameter is provided to
@@ -2531,9 +2531,9 @@ void vTaskGenericNotifyGiveFromISR( TaskHandle_t xTaskToNotify,
                                     UBaseType_t uxIndexToNotify,
                                     BaseType_t * pxHigherPriorityTaskWoken ) PRIVILEGED_FUNCTION;
 #define vTaskNotifyGiveFromISR( xTaskToNotify, pxHigherPriorityTaskWoken ) \
-    vTaskGenericNotifyGiveFromISR( ( xTaskToNotify ), ( tskDEFAULT_INDEX_TO_NOTIFY ), ( pxHigherPriorityTaskWoken ) );
+    vTaskGenericNotifyGiveFromISR( ( xTaskToNotify ), ( tskDEFAULT_INDEX_TO_NOTIFY ), ( pxHigherPriorityTaskWoken ) )
 #define vTaskNotifyGiveIndexedFromISR( xTaskToNotify, uxIndexToNotify, pxHigherPriorityTaskWoken ) \
-    vTaskGenericNotifyGiveFromISR( ( xTaskToNotify ), ( uxIndexToNotify ), ( pxHigherPriorityTaskWoken ) );
+    vTaskGenericNotifyGiveFromISR( ( xTaskToNotify ), ( uxIndexToNotify ), ( pxHigherPriorityTaskWoken ) )
 
 /**
  * task. h
@@ -3060,7 +3060,7 @@ void vTaskPriorityDisinheritAfterTimeout( TaskHandle_t const pxMutexHolder,
                                           UBaseType_t uxHighestPriorityWaitingTask ) PRIVILEGED_FUNCTION;
 
 /*
- * Get the uxTCBNumber assigned to the task referenced by the xTask parameter.
+ * Get the uxTaskNumber assigned to the task referenced by the xTask parameter.
  */
 UBaseType_t uxTaskGetTaskNumber( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
 
@@ -3079,7 +3079,7 @@ void vTaskSetTaskNumber( TaskHandle_t xTask,
  * to date with the actual execution time by being skipped forward by a time
  * equal to the idle period.
  */
-void vTaskStepTick( const TickType_t xTicksToJump ) PRIVILEGED_FUNCTION;
+void vTaskStepTick( TickType_t xTicksToJump ) PRIVILEGED_FUNCTION;
 
 /*
  * Only available when configUSE_TICKLESS_IDLE is set to 1.
