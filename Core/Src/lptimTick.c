@@ -162,10 +162,8 @@
 // Also be aware that the ISR resets the phase of the ticks after calling this macro.
 //
 //      If ticks are dropped and you did *not* mask the tick interrupt long enough to drop a tick, you
-// probably have ISRs blocking the tick ISR for too long.  This is not necessarily a problem, but if you want
-// to avoid dropped ticks, or if any combination of ISRs can block the tick ISR for more than a tick period
-// even with no masking of interrupts, then you must adjust your design or reconfigure the interrupt
-// priorities.  Please see configTICK_INTERRUPT_PRIORITY above.
+// probably have ISRs blocking the tick ISR for too long.  This is a serious issue that requires changes to
+// your design.  Please see configTICK_INTERRUPT_PRIORITY above.
 //
 #ifndef traceTICKS_DROPPED
 #define traceTICKS_DROPPED(x)
@@ -478,7 +476,7 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
       // added one tick (well, actually the ISR "pended" the increment because the scheduler is currently
       // suspended, but it's all the same to us), so we use "- 1" here.
       //
-      TickType_t xCompleteTickPeriods = xExpectedIdleTime - (TickType_t)1;
+      TickType_t xCompleteTickPeriods = xExpectedIdleTime - (TickType_t) 1;
 
       //      We identify that we reached the end of the expected idle time by noting that the tick ISR has
       // modified usIdealCmp.  So if it hasn't, then we probably have to reschedule the next tick as described
@@ -550,6 +548,12 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
                xFullTicksLeft = ulFullCountsLeft / ulTimerCountsForOneTick;
             }
             #endif // configLPTIM_ENABLE_PRECISION
+
+            //      Verify that we calculated a sensible number of full ticks remaining in the expected idle
+            // time.  If this assertion fails, then the tick ISR was delayed too long by other ISR(s).  You
+            // must either reduce the execution times of your ISRs, decrease their priorities, or increase the
+            // priority of the tick ISR.  See the description of configTICK_INTERRUPT_PRIORITY for details.
+            //
             configASSERT( xFullTicksLeft < xExpectedIdleTime );
 
             if (xFullTicksLeft != 0)
