@@ -29,6 +29,7 @@ extern "C" {
 
 /* Include low level driver */
 #include "stm32u5xx_ll_lptim.h"
+
 /** @addtogroup STM32U5xx_HAL_Driver
   * @{
   */
@@ -106,7 +107,7 @@ typedef struct
   uint32_t                     Period;            /*!< Specifies the period value to be loaded into the active
                                                   Auto-Reload Register at the next update event.
                                                   This parameter can be a number between
-                                                  Min_Data = 0x0000 and Max_Data = 0xFFFF.  */
+                                                  Min_Data = 0x0001 and Max_Data = 0xFFFF.  */
 
   uint32_t                     UpdateMode;        /*!< Specifies whether the update of the autoreload and the compare
                                                   values is done immediately or after the end of current period.
@@ -232,10 +233,10 @@ typedef struct
   void (* UpdateEventCallback)(struct __LPTIM_HandleTypeDef *hlptim);        /*!< Update event detection Callback              */
   void (* RepCounterWriteCallback)(struct __LPTIM_HandleTypeDef *hlptim);    /*!< Repetition counter register write complete Callback */
   void (* UpdateEventHalfCpltCallback)(struct __LPTIM_HandleTypeDef *hlptim);/*!< Update event half complete detection Callback */
+  void (* ErrorCallback)(struct __LPTIM_HandleTypeDef *hlptim);              /*!< LPTIM Error Callback                         */
   void (* IC_CaptureCallback)(struct __LPTIM_HandleTypeDef *hlptim);         /*!< Input capture Callback                       */
   void (* IC_CaptureHalfCpltCallback)(struct __LPTIM_HandleTypeDef *htim);   /*!< Input Capture half complete Callback         */
   void (* IC_OverCaptureCallback)(struct __LPTIM_HandleTypeDef *hlptim);     /*!< Over capture Callback                        */
-  void (* ErrorCallback)(struct __LPTIM_HandleTypeDef *hlptim);              /*!< LPTIM Error Callback                         */
 #endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */
 } LPTIM_HandleTypeDef;
 
@@ -257,10 +258,10 @@ typedef enum
   HAL_LPTIM_UPDATE_EVENT_CB_ID      = 0x09U,   /*!< Update event detection Callback ID               */
   HAL_LPTIM_REP_COUNTER_WRITE_CB_ID = 0x0AU,   /*!< Repetition counter register write complete Callback ID */
   HAL_LPTIM_UPDATE_EVENT_HALF_CB_ID = 0x0BU,   /*!< Update event half complete detection Callback ID */
-  HAL_LPTIM_IC_CAPTURE_CB_ID        = 0x0CU,   /*!< Input capture Callback ID                        */
-  HAL_LPTIM_IC_CAPTURE_HALF_CB_ID   = 0x0DU,   /*!< Input capture half complete Callback ID          */
-  HAL_LPTIM_OVER_CAPTURE_CB_ID      = 0x0EU,   /*!< Over capture Callback ID                         */
-  HAL_LPTIM_ERROR_CB_ID             = 0x0FU,   /*!< LPTIM Error Callback ID                          */
+  HAL_LPTIM_ERROR_CB_ID             = 0x0CU,   /*!< LPTIM Error Callback ID                          */
+  HAL_LPTIM_IC_CAPTURE_CB_ID        = 0x0DU,   /*!< Input capture Callback ID                        */
+  HAL_LPTIM_IC_CAPTURE_HALF_CB_ID   = 0x0EU,   /*!< Input capture half complete Callback ID          */
+  HAL_LPTIM_OVER_CAPTURE_CB_ID      = 0x0FU,   /*!< Over capture Callback ID                         */
 } HAL_LPTIM_CallbackIDTypeDef;
 
 /**
@@ -395,7 +396,9 @@ typedef  void (*pLPTIM_CallbackTypeDef)(LPTIM_HandleTypeDef *hlptim);  /*!< poin
   */
 
 #define LPTIM_INPUT2SOURCE_GPIO         0x00000000U                    /*!< For LPTIM1 and LPTIM2 */
+#if defined(COMP2)
 #define LPTIM_INPUT2SOURCE_COMP2        LPTIM_CFGR2_IN2SEL_0           /*!< For LPTIM1 and LPTIM2 */
+#endif /* COMP2 */
 /**
   * @}
   */
@@ -518,7 +521,9 @@ typedef  void (*pLPTIM_CallbackTypeDef)(LPTIM_HandleTypeDef *hlptim);  /*!< poin
   */
 #define LPTIM_IC1SOURCE_GPIO                       0x00000000UL                               /*!< For LPTIM1, LPTIM2 and LPTIM3 */
 #define LPTIM_IC1SOURCE_COMP1                      LPTIM_CFGR2_IC1SEL_0                       /*!< For LPTIM1, LPTIM2 and LPTIM3 */
+#if defined(COMP2)
 #define LPTIM_IC1SOURCE_COMP2                      LPTIM_CFGR2_IC1SEL_1                       /*!< For LPTIM1, LPTIM2 and LPTIM3 */
+#endif /* COMP2 */
 #define LPTIM_IC2SOURCE_GPIO                       0x00000000UL                               /*!< For LPTIM1, LPTIM2 and LPTIM3 */
 #define LPTIM_IC2SOURCE_LSI                        LPTIM_CFGR2_IC2SEL_0                       /*!< For LPTIM1 */
 #define LPTIM_IC2SOURCE_LSE                        LPTIM_CFGR2_IC2SEL_1                       /*!< For LPTIM1 */
@@ -861,7 +866,7 @@ void HAL_LPTIM_MspDeInit(LPTIM_HandleTypeDef *hlptim);
   * @{
   */
 /* Config functions  **********************************************************/
-HAL_StatusTypeDef HAL_LPTIM_OC_ConfigChannel(LPTIM_HandleTypeDef *hlptim, LPTIM_OC_ConfigTypeDef *sConfig,
+HAL_StatusTypeDef HAL_LPTIM_OC_ConfigChannel(LPTIM_HandleTypeDef *hlptim, const LPTIM_OC_ConfigTypeDef *sConfig,
                                              uint32_t Channel);
 
 /* Start/Stop operation functions  *********************************************/
@@ -872,7 +877,7 @@ HAL_StatusTypeDef HAL_LPTIM_PWM_Stop(LPTIM_HandleTypeDef *hlptim, uint32_t Chann
 /* Non-Blocking mode: Interrupt */
 HAL_StatusTypeDef HAL_LPTIM_PWM_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
 HAL_StatusTypeDef HAL_LPTIM_PWM_Stop_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
-HAL_StatusTypeDef HAL_LPTIM_PWM_Start_DMA(LPTIM_HandleTypeDef *hlptim, uint32_t Channel, uint32_t *pData,
+HAL_StatusTypeDef HAL_LPTIM_PWM_Start_DMA(LPTIM_HandleTypeDef *hlptim, uint32_t Channel, const uint32_t *pData,
                                           uint32_t Length);
 HAL_StatusTypeDef HAL_LPTIM_PWM_Stop_DMA(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
 
@@ -918,7 +923,7 @@ HAL_StatusTypeDef HAL_LPTIM_Counter_Stop_IT(LPTIM_HandleTypeDef *hlptim);
 
 /* ############################## Input Capture Mode ###############################*/
 /* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_LPTIM_IC_ConfigChannel(LPTIM_HandleTypeDef *hlptim, LPTIM_IC_ConfigTypeDef *sConfig,
+HAL_StatusTypeDef HAL_LPTIM_IC_ConfigChannel(LPTIM_HandleTypeDef *hlptim, const LPTIM_IC_ConfigTypeDef *sConfig,
                                              uint32_t Channel);
 HAL_StatusTypeDef HAL_LPTIM_IC_Start(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
 HAL_StatusTypeDef HAL_LPTIM_IC_Stop(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
@@ -937,10 +942,10 @@ HAL_StatusTypeDef HAL_LPTIM_IC_Stop_DMA(LPTIM_HandleTypeDef *hlptim, uint32_t Ch
   * @{
   */
 /* Reading operation functions ************************************************/
-uint32_t HAL_LPTIM_ReadCounter(LPTIM_HandleTypeDef *hlptim);
-uint32_t HAL_LPTIM_ReadAutoReload(LPTIM_HandleTypeDef *hlptim);
-uint32_t HAL_LPTIM_ReadCapturedValue(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
-uint8_t HAL_LPTIM_IC_GetOffset(LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
+uint32_t HAL_LPTIM_ReadCounter(const LPTIM_HandleTypeDef *hlptim);
+uint32_t HAL_LPTIM_ReadAutoReload(const LPTIM_HandleTypeDef *hlptim);
+uint32_t HAL_LPTIM_ReadCapturedValue(const LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
+uint8_t HAL_LPTIM_IC_GetOffset(const LPTIM_HandleTypeDef *hlptim, uint32_t Channel);
 /**
   * @}
   */
@@ -983,7 +988,7 @@ HAL_StatusTypeDef HAL_LPTIM_UnRegisterCallback(LPTIM_HandleTypeDef *lphtim, HAL_
   * @{
   */
 /* Peripheral State functions  ************************************************/
-HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim);
+HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(const LPTIM_HandleTypeDef *hlptim);
 /**
   * @}
   */
@@ -1072,11 +1077,10 @@ HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim);
 #define IS_LPTIM_COUNTER_SOURCE(__SOURCE__)     (((__SOURCE__) == LPTIM_COUNTERSOURCE_INTERNAL) || \
                                                  ((__SOURCE__) == LPTIM_COUNTERSOURCE_EXTERNAL))
 
-#define IS_LPTIM_AUTORELOAD(__AUTORELOAD__)     ((__AUTORELOAD__) <= 0x0000FFFFUL)
-
 #define IS_LPTIM_COMPARE(__COMPARE__)           ((__COMPARE__) <= 0x0000FFFFUL)
 
-#define IS_LPTIM_PERIOD(__PERIOD__)             ((__PERIOD__) <= 0x0000FFFFUL)
+#define IS_LPTIM_PERIOD(__PERIOD__)             ((0x00000001UL <= (__PERIOD__)) &&\
+                                                 ((__PERIOD__) <= 0x0000FFFFUL))
 
 #define IS_LPTIM_PULSE(__PULSE__)               ((__PULSE__) <= 0x0000FFFFUL)
 
@@ -1106,12 +1110,20 @@ HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim);
    (((__SOURCE__) == LPTIM_INPUT1SOURCE_GPIO) || \
     ((__SOURCE__) == LPTIM_INPUT1SOURCE_COMP1)))
 
+#if defined(COMP2)
 #define IS_LPTIM_INPUT2_SOURCE(__INSTANCE__, __SOURCE__) \
   ((((__INSTANCE__) == LPTIM1) || \
     ((__INSTANCE__) == LPTIM2)) && \
    (((__SOURCE__) == LPTIM_INPUT2SOURCE_GPIO) || \
     ((__SOURCE__) == LPTIM_INPUT2SOURCE_COMP2)))
+#else
+#define IS_LPTIM_INPUT2_SOURCE(__INSTANCE__, __SOURCE__) \
+  ((((__INSTANCE__) == LPTIM1) || \
+    ((__INSTANCE__) == LPTIM2)) && \
+   (((__SOURCE__) == LPTIM_INPUT2SOURCE_GPIO)))
+#endif /* COMP2 */
 
+#if defined(COMP2)
 #define IS_LPTIM_IC1_SOURCE(__INSTANCE__, __SOURCE__) \
   ((((__INSTANCE__) == LPTIM1) ||                  \
     ((__INSTANCE__) == LPTIM2)||                   \
@@ -1119,6 +1131,14 @@ HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim);
    (((__SOURCE__) == LPTIM_IC1SOURCE_GPIO) ||       \
     ((__SOURCE__) == LPTIM_IC1SOURCE_COMP1) ||      \
     ((__SOURCE__) == LPTIM_IC1SOURCE_COMP2)))
+#else
+#define IS_LPTIM_IC1_SOURCE(__INSTANCE__, __SOURCE__) \
+  ((((__INSTANCE__) == LPTIM1) ||                  \
+    ((__INSTANCE__) == LPTIM2)||                   \
+    ((__INSTANCE__) == LPTIM3)) &&                 \
+   (((__SOURCE__) == LPTIM_IC1SOURCE_GPIO) ||       \
+    ((__SOURCE__) == LPTIM_IC1SOURCE_COMP1)))
+#endif /* COMP2 */
 
 #define IS_LPTIM_IC2_SOURCE(__INSTANCE__, __SOURCE__) \
   ((((__INSTANCE__) == LPTIM1) &&                   \

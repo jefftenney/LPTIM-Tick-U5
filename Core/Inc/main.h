@@ -80,6 +80,7 @@ void Error_Handler(void);
 #define T_SWDIO_GPIO_Port GPIOA
 #define T_VCP_TX_Pin GPIO_PIN_9
 #define T_VCP_TX_GPIO_Port GPIOA
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
