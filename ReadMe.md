@@ -1,5 +1,5 @@
 # LPTIM-Tick-U5
-*FreeRTOS Tick/Tickless via LPTIM in STM32U5*
+*FreeRTOS Tick/Tickless via LPTIM in STM32U*
 
 Use LPTIM for the FreeRTOS tick instead of the SysTick Timer for ultra-low-power applications.
 
@@ -7,7 +7,7 @@ Use LPTIM for the FreeRTOS tick instead of the SysTick Timer for ultra-low-power
 - Use STOP modes even while FreeRTOS timers are running or delays are underway
 - For any STM32 with LPTIM (see [LPTIM-Tick](https://github.com/jefftenney/LPTIM-Tick))
 
-This repository demonstrates adaptation of the [lptimTick.c gist](https://gist.github.com/jefftenney/02b313fe649a14b4c75237f925872d72) to the STM32U5 series MCU.  The specific target platform is the ST [B-U585I-IOT02A](https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html) (STM32U585).  The project uses STM32CubeIDE and its integrated code-generation tool (STM32CubeMX).  However, lptimTick.c is compatible with any toolchain supported by FreeRTOS.
+This repository demonstrates adaptation of the [lptimTick.c gist](https://gist.github.com/jefftenney/02b313fe649a14b4c75237f925872d72) to the STM32U series MCUs.  The specific target platform is the ST [B-U585I-IOT02A](https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html) (STM32U585).  The project uses STM32CubeIDE and its integrated code-generation tool (STM32CubeMX).  However, lptimTick.c is compatible with any toolchain supported by FreeRTOS.
 
 For a thorough evaluation, this project can be built without tickless idle, with the default tickless idle, or with the custom tickless idle provided by lptimTick.c.  See branches for additional evaluation options.
 

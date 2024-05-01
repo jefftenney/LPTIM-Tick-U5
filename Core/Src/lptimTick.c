@@ -1,6 +1,6 @@
 // lptimTick.c -- Jeff Tenney
 //
-// STM32U5 No-Drift FreeRTOS Tick/Tickless via LPTIM
+// STM32U No-Drift FreeRTOS Tick/Tickless via LPTIM
 //
 // Revision: 2022.01.18
 // Tabs: None
@@ -43,9 +43,9 @@
 //   o Avoids drift and errors found in other LPTIM implementations available from ST or the public domain.
 //   o Detects/reports ticks dropped due to the application masking interrupts (the tick ISR) for too long.
 //
-//      This software is currently adapted for STM32U5.  To adapt this software to other STM32 devices, start
+//      This software is currently adapted for STM32U.  To adapt this software to other STM32 devices, start
 // with the current revision of the original work (see https://github.com/jefftenney/LPTIM-Tick) instead of
-// this adapted version.  This version is enhanced for the STM32U5.
+// this adapted version.  This version is enhanced for the STM32U.
 
 
 // Terminology
