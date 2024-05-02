@@ -128,7 +128,7 @@
 //
 #ifdef configTICK_USES_LSI
    #define LPTIMSEL_Val 1 // LSI
-   #define IS_REF_CLOCK_READY() (RCC->CSR & RCC_CSR_LSIRDY)
+   #define IS_REF_CLOCK_READY() (RCC->BDCR & RCC_BDCR_LSIRDY)
 #else
    #define LPTIMSEL_Val 3 // LSE
    #define IS_REF_CLOCK_READY() (RCC->BDCR & RCC_BDCR_LSESYSRDY)
