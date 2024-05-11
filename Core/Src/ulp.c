@@ -6,6 +6,7 @@
 #include "ulp.h"
 
 #define SUPPORT_VREG_RANGES_1_THROUGH_3
+#define SUPPORT_MSI_AT_48MHZ
 
 static uint32_t ramKey  __attribute__ ((section (".noinit")));
 static uint32_t minTime __attribute__ ((section (".noinit")));
@@ -27,9 +28,10 @@ void vUlpInit()
    //      Be sure the MCU wakes up from stop mode on the same clock we normally use as the core clock, if
    // possible.  Might as well give the MCU a head start getting the clock going while waking from STOP.
    //
-   #define RCC_CFGR1_SW_HSI16  RCC_CFGR1_SW_0
-   #define RCC_CFGR1_SW_MSIS   0
-   #define RCC_CFGR1_SW_PLL   (RCC_CFGR1_SW_0 | RCC_CFGR1_SW_1)
+   #define RCC_CFGR1_SW_MSIS   (0 * RCC_CFGR1_SW_0)
+   #define RCC_CFGR1_SW_HSI16  (1 * RCC_CFGR1_SW_0)
+   #define RCC_CFGR1_SW_HSE    (2 * RCC_CFGR1_SW_0)
+   #define RCC_CFGR1_SW_PLL    (3 * RCC_CFGR1_SW_0)
    if ( (RCC->CFGR1 & RCC_CFGR1_SW_Msk) == RCC_CFGR1_SW_HSI16 )
    {
       SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
@@ -55,14 +57,25 @@ void vUlpInit()
       }
       else
       {
-         //      The clock source for the PLL is HSE, but the MCU won't wake from stop mode on HSE.  So don't
-         // change which clock helps us wake from stop mode -- MSIS or HSI16.
+         //      The clock source for the PLL is HSE, but the MCU won't wake from stop mode on HSE.  Arrange
+         // to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait states are
+         // configured.
          //
+         SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
+
          //      Note that the source for the core-voltage booster is also HSE in this case.  We don't support
          // HSE as the clock source to the core-voltage booster, unless the HSE is in bypass mode.
          //
          configASSERT( !(PWR->VOSR & PWR_VOSR_BOOSTEN) || (RCC->CR & RCC_CR_HSEBYP) );
       }
+   }
+   else
+   {
+      //      The application has selected HSE as the system clock, but the MCU won't wake from stop mode on
+      // HSE.  Arrange to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait
+      // states are configured.
+      //
+      SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
    }
 
    //      Enable the cycle counter in the Data Watchpoint and Trace unit.  A debugger enables this unit for
@@ -171,14 +184,17 @@ void vUlpPostSleepProcessing()
 
       //      Restore the clock-enable bits as described above.  Do it now in case we must wait below for the
       // PWR->VOSR register to indicate that the core-voltage booster is ready.  (It may require a clock that
-      // is enabled by RCC->CR or a frequency set by RCC->ICSCR1.)
+      // is enabled by RCC->CR or a frequency set by RCC->ICSCR1.)  Restore ICSCR1 first in case our write to
+      // RCC->CR enables MSI; we must not change the MSI speed setting after we start MSI and before
+      // RCC_CR_MSISRDY is set.
       //
-      RCC->CR = rccCrSave;
       #ifdef SUPPORT_MSI_AT_48MHZ
       {
-         RCC->ICSCR1 = rccIcscr1Save;
+         RCC->ICSCR1 = rccIcscr1Save;  // Safe.  Either RCC_CR_MSISRDY is set here, or RCC_CR_MSISON is clear.
       }
       #endif
+
+      RCC->CR = rccCrSave;
 
       #ifdef SUPPORT_VREG_RANGES_1_THROUGH_3
       {
