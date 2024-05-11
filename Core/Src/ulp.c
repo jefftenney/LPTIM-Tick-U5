@@ -188,8 +188,23 @@ void vUlpPostSleepProcessing()
       // RCC->CR enables MSI; we must not change the MSI speed setting after we start MSI and before
       // RCC_CR_MSISRDY is set.
       //
+      uint32_t captureBefore = DWT->CYCCNT;
+
       #ifdef SUPPORT_MSI_AT_48MHZ
       {
+         #ifdef SUPPORT_VREG_RANGES_1_THROUGH_3
+         {
+            //      If we were in stop mode, the PWR module cleared both VOS bits.  Restore them now in case
+            // MSIS is about to return to 48 MHz and is currently the system clock (even temporarily).
+            //
+            PWR->VOSR |= (pwrVosrSave & PWR_VOSR_VOS_Msk);
+            while ( (PWR->VOSR & PWR_VOSR_VOSRDY) == 0)
+            {
+               // Just wait for VOSRDY.
+            }
+         }
+         #endif
+
          RCC->ICSCR1 = rccIcscr1Save;  // Safe.  Either RCC_CR_MSISRDY is set here, or RCC_CR_MSISON is clear.
       }
       #endif
@@ -202,8 +217,6 @@ void vUlpPostSleepProcessing()
          // to support the previous clock speeds.  In deep sleep, the PWR module sets range 4 automatically.
          // Wait for the regulator (and booster if necessary) to be ready before restoring the clocks.
          //
-         uint32_t captureBefore = DWT->CYCCNT;
-
          do
          {
             PWR->VOSR = pwrVosrSave;
