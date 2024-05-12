@@ -144,19 +144,6 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM
 
-  /* Uninitialized data section (truly uninitialized) */
-  /* Use __attribute__ ((section (".noinit"))) */
-  . = ALIGN(4);
-  .noinit (NOLOAD) :
-  {
-    __noinit_start = .;       /* define a global symbol at noinit start */
-    *(.noinit)
-    *(.noinit*)
-
-    . = ALIGN(4);
-    __noinit_end = .;         /* define a global symbol at noinit end */
-  } >RAM
-
   /* User_heap_stack section, used to check that there is enough "RAM" Ram type memory left */
   ._user_heap_stack :
   {
