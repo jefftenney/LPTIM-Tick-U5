@@ -24,6 +24,7 @@ void vUlpInit();
 //
 #define ulpPERIPHERAL_USART1     (1UL << 0)
 #define ulpPERIPHERAL_MIN_RUN    (1UL << 1)
+#define ulpPERIPHERAL_HSE        (1UL << 2)
 
 //      Identify the subset of the peripherals listed above that can operate in STOP 1 but not STOP 2 mode.
 //

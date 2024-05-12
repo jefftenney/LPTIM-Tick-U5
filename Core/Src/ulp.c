@@ -8,6 +8,26 @@
 #define SUPPORT_VREG_RANGES_1_THROUGH_3
 #define SUPPORT_MSI_AT_48MHZ
 
+// Warning about HSE and Stop modes
+//
+//      An ultra-low-power application that uses HSE should use it only when needed, and should avoid the use
+// of stop modes while HSE is in use.  This advice applies even if HSE is used in bypass mode.  An easy way to
+// avoid stop modes while HSE is in use is to register it as a peripheral not safe for stop modes.  See
+// ulpPERIPHERAL_HSE in ulp.h for example.
+//
+//      HSE (the High-Speed External clock) can be used directly as the system clock or as the clock source
+// for the main PLL.  However, the STM32U cannot use HSE during wake-up from stop mode.  Instead, it uses
+// either HSI16 or MSIS during wake-up.  Function vUlpInit() selects HSI16 as the wake-up clock for those
+// configurations.  More importantly, this software typically does not stop HSI16 once HSE (and the PLL) have
+// resumed after the wake-up.  For most applications it's OK to keep HSI16 running unused; it doesn't consume
+// much energy, and it always stops in stop mode.
+//
+//      Function vUlpPostSleepProcessing() does attempt to restore the pre-sleep status of HSI16, but it does
+// not typically retain control long enough for HSE or the PLL to resume as the core clock.  Thus the HSION
+// bit remains set, even if vUlpPostSleepProcessing() attempted to clear it, because HSI16 was providing the
+// core clock at that time.  Clearing HSION later, if desired, is the application's responsibility.
+
+
 static uint32_t ramKey  __attribute__ ((section (".noinit")));
 static uint32_t minTime __attribute__ ((section (".noinit")));
 static uint32_t maxTime __attribute__ ((section (".noinit")));
@@ -61,7 +81,7 @@ void vUlpInit()
          // to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait states are
          // configured.
          //
-         SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
+         SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);  // See note regarding HSE near the top of this file.
 
          //      Note that the source for the core-voltage booster is also HSE in this case.  We don't support
          // HSE as the clock source to the core-voltage booster, unless the HSE is in bypass mode.
@@ -75,7 +95,7 @@ void vUlpInit()
       // HSE.  Arrange to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait
       // states are configured.
       //
-      SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
+      SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);  // See note regarding HSE near the top of this file.
    }
 
    //      Enable the cycle counter in the Data Watchpoint and Trace unit.  A debugger enables this unit for
@@ -182,11 +202,12 @@ void vUlpPostSleepProcessing()
       //      We may have been in deep sleep.  If we were, the RCC cleared several enable bits in the CR, and
       // it changed the selected system clock in CFGR.  We need to restore them.
 
-      //      Restore the clock-enable bits as described above.  Do it now in case we must wait below for the
-      // PWR->VOSR register to indicate that the core-voltage booster is ready.  (It may require a clock that
-      // is enabled by RCC->CR or a frequency set by RCC->ICSCR1.)  Restore ICSCR1 first in case our write to
-      // RCC->CR enables MSI; we must not change the MSI speed setting after we start MSI and before
-      // RCC_CR_MSISRDY is set.
+      //      Restore the clock-enable bits first, in case we must wait below for the PWR->VOSR register to
+      // indicate that the core-voltage booster is ready.  (It may require a clock that is enabled by RCC->CR
+      // or a frequency set by RCC->ICSCR1.)  But we must restore ICSCR1 before CR in case our write to CR
+      // enables MSI; we must not change the MSI speed after we start MSI and before RCC_CR_MSISRDY is set.
+      // If MSI might be at 48 MHz, we must actually restore the core-voltage config (VOS) before restoring
+      // ICSCR1 because the MSI is usually the core clock right now in that case.
       //
       uint32_t captureBefore = DWT->CYCCNT;
 
@@ -238,7 +259,7 @@ void vUlpPostSleepProcessing()
 
       //      Now restore the selected system clock.  If we've just restarted the PLL above and if we now
       // select it as the CPU clock, the CPU continues executing instructions on the wake-up clock (HSI or
-      // MSIe) until the PLL is stable, and then the CPU starts using the PLL.
+      // MSIS) until the PLL is stable, and then the CPU starts using the PLL.
       //
       RCC->CFGR1 = rccCfgrSave;
 
