@@ -5,8 +5,18 @@
 #include "task.h"
 #include "ulp.h"
 
-#define SUPPORT_VREG_RANGES_1_THROUGH_3
-#define SUPPORT_MSI_AT_48MHZ
+// ULP Configuration Options
+//
+// #define SUPPORT_VREG_RANGES_1_THROUGH_3
+// #define SUPPORT_MSI_AT_48MHZ
+
+// Use of MSI as the clock source for the PLL
+//
+//      An ultra-low-power application that uses MSI as the clock source for the PLL must ensure that the MSI
+// frequency is compatible with the flash wait-state and core-voltage regulator configurations as if MSI were
+// providing the core clock directly.  In these applications, MSI does provide the core clock directly for a
+// short time after waking from stop mode.  This is typically not an issue because the PLL is typically set
+// for a frequency faster than its incoming MSI frequency.
 
 // Warning about HSE and Stop modes
 //
@@ -15,22 +25,9 @@
 // avoid stop modes while HSE is in use is to register it as a peripheral not safe for stop modes.  See
 // ulpPERIPHERAL_HSE in ulp.h for example.
 //
-//      HSE (the High-Speed External clock) can be used directly as the system clock or as the clock source
-// for the main PLL.  However, the STM32U cannot use HSE during wake-up from stop mode.  Instead, it uses
-// either HSI16 or MSIS during wake-up.  Function vUlpInit() selects HSI16 as the wake-up clock for those
-// configurations.  More importantly, this software typically does not stop HSI16 once HSE (and the PLL) have
-// resumed after the wake-up.  For most applications it's OK to keep HSI16 running unused; it doesn't consume
-// much energy, and it always stops in stop mode.
-//
-//      Function vUlpPostSleepProcessing() does attempt to restore the pre-sleep status of HSI16, but it does
-// not typically retain control long enough for HSE or the PLL to resume as the core clock.  Thus the HSION
-// bit remains set, even if vUlpPostSleepProcessing() attempted to clear it, because HSI16 was providing the
-// core clock at that time.  Clearing HSION later, if desired, is the application's responsibility.
+//      This implementation of ULP assumes the application follows the advice above.  The clock configuration
+// that doesn't use HSE is considered the ULP-friendly clock configuration.
 
-
-static uint32_t ramKey  __attribute__ ((section (".noinit")));
-static uint32_t minTime __attribute__ ((section (".noinit")));
-static uint32_t maxTime __attribute__ ((section (".noinit")));
 void vUlpInit()
 {
    //      Turn on the peripheral clock to the PWR module.  We use that module to control low-power options.
@@ -60,60 +57,35 @@ void vUlpInit()
    {
       CLEAR_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
    }
-   else if ( (RCC->CFGR1 & RCC_CFGR1_SW_Msk) == RCC_CFGR1_SW_PLL )
+   else
    {
-      //      The application has selected the PLL (PLL1) as the system clock.  In this case, we optimize the
-      // wake up timing by configuring the MCU to wake from the source clock for the PLL (MSIS or HSI16).
+      //     An assertion failure here means the application has called vUlpInit() while HSE is providing the
+      // core clock.  The application must call vUlpInit() while the ULP-friendly clock configuration is in
+      // place.  See "Warning about HSE and Stop modes" above for more information.
       //
-      #define RCC_PLL1CFGR_PLL1SRC_MSIS   RCC_PLL1CFGR_PLL1SRC_0
-      #define RCC_PLL1CFGR_PLL1SRC_HSI16  RCC_PLL1CFGR_PLL1SRC_1
+      configASSERT( (RCC->CFGR1 & RCC_CFGR1_SW_Msk) == RCC_CFGR1_SW_PLL );
+
+      //      The application has selected the PLL (PLL1) as the system clock.  In this case, we optimize the
+      // wake up timing and simplify the post-sleep code by configuring the MCU to wake from the source clock
+      // for the PLL (MSIS or HSI16).
+      //
+      #define RCC_PLL1CFGR_PLL1SRC_MSIS   (1 * RCC_PLL1CFGR_PLL1SRC_0)
+      #define RCC_PLL1CFGR_PLL1SRC_HSI16  (2 * RCC_PLL1CFGR_PLL1SRC_0)
+      #define RCC_PLL1CFGR_PLL1SRC_HSE    (3 * RCC_PLL1CFGR_PLL1SRC_0)
       if ( (RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1SRC_Msk) == RCC_PLL1CFGR_PLL1SRC_HSI16 )
       {
          SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
       }
-      else if ( (RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1SRC_Msk) == RCC_PLL1CFGR_PLL1SRC_MSIS )
-      {
-         CLEAR_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
-      }
       else
       {
-         //      The clock source for the PLL is HSE, but the MCU won't wake from stop mode on HSE.  Arrange
-         // to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait states are
-         // configured.
-         //
-         SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);  // See note regarding HSE near the top of this file.
+         CLEAR_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);
 
-         //      Note that the source for the core-voltage booster is also HSE in this case.  We don't support
-         // HSE as the clock source to the core-voltage booster, unless the HSE is in bypass mode.
+         //      An assertion failure here means the application has called vUlpInit() while HSE is providing
+         // the input clock to the PLL.  The application must call vUlpInit() while the ULP-friendly clock
+         // configuration is in place.  See "Warning about HSE and Stop modes" above for more information.
          //
-         configASSERT( !(PWR->VOSR & PWR_VOSR_BOOSTEN) || (RCC->CR & RCC_CR_HSEBYP) );
+         configASSERT( (RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1SRC_Msk) == RCC_PLL1CFGR_PLL1SRC_MSIS );
       }
-   }
-   else
-   {
-      //      The application has selected HSE as the system clock, but the MCU won't wake from stop mode on
-      // HSE.  Arrange to wake from HSI16 since 16 MHz is safe no matter how the core regulator and flash wait
-      // states are configured.
-      //
-      SET_BIT(RCC->CFGR1, RCC_CFGR1_STOPWUCK);  // See note regarding HSE near the top of this file.
-   }
-
-   //      Enable the cycle counter in the Data Watchpoint and Trace unit.  A debugger enables this unit for
-   // us, but when we're not running on a debugger, we have to enable it ourselves.  First we enable the DWT
-   // (along with the PMU and ITM), and then we tell the DWT to turn on the cycle counter.  The ARMv8-M
-   // Architecture Reference Manual describes the core's debug and trace components including the DWT system
-   // (section B14).  Register detail is found in section D1.2.
-   //
-   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-
-   // diagnostics: reset min/max values if lost during reset
-   #define RAM_KEY_VALUE  0x3EFFA10E
-   if (ramKey != RAM_KEY_VALUE)
-   {
-      minTime = UINT32_MAX;
-      maxTime = 0;
-      ramKey = RAM_KEY_VALUE;
    }
 }
 
@@ -200,67 +172,31 @@ void vUlpPostSleepProcessing()
    if (SCB->SCR & SCB_SCR_SLEEPDEEP_Msk)
    {
       //      We may have been in deep sleep.  If we were, the RCC cleared several enable bits in the CR, and
-      // it changed the selected system clock in CFGR.  We need to restore them.
-
-      //      Restore the clock-enable bits first, in case we must wait below for the PWR->VOSR register to
-      // indicate that the core-voltage booster is ready.  (It may require a clock that is enabled by RCC->CR
-      // or a frequency set by RCC->ICSCR1.)  But we must restore ICSCR1 before CR in case our write to CR
-      // enables MSI; we must not change the MSI speed after we start MSI and before RCC_CR_MSISRDY is set.
-      // If MSI might be at 48 MHz, we must actually restore the core-voltage config (VOS) before restoring
-      // ICSCR1 because the MSI is usually the core clock right now in that case.
-      //
-      uint32_t captureBefore = DWT->CYCCNT;
-
-      #ifdef SUPPORT_MSI_AT_48MHZ
-      {
-         #ifdef SUPPORT_VREG_RANGES_1_THROUGH_3
-         {
-            //      If we were in stop mode, the PWR module cleared both VOS bits.  Restore them now in case
-            // MSIS is about to return to 48 MHz and is currently the system clock (even temporarily).
-            //
-            PWR->VOSR |= (pwrVosrSave & PWR_VOSR_VOS_Msk);
-            while ( (PWR->VOSR & PWR_VOSR_VOSRDY) == 0)
-            {
-               // Just wait for VOSRDY.
-            }
-         }
-         #endif
-
-         RCC->ICSCR1 = rccIcscr1Save;  // Safe.  Either RCC_CR_MSISRDY is set here, or RCC_CR_MSISON is clear.
-      }
-      #endif
-
-      RCC->CR = rccCrSave;
+      // it changed the selected system clock in CFGR.  Restore them now.  If we're restarting the PLL as
+      // the CPU clock here, the CPU will not wait for it.  Instead, the CPU continues executing from the
+      // wake-up clock (MSIS or HSI16) until the PLL is stable and then the CPU starts using the PLL.
 
       #ifdef SUPPORT_VREG_RANGES_1_THROUGH_3
       {
-         //      In the STM32U, we must first restore the previous regulator range because it may be required
+         //      In the STM32U5, we must first restore the previous regulator range because it may be required
          // to support the previous clock speeds.  In deep sleep, the PWR module sets range 4 automatically.
-         // Wait for the regulator (and booster if necessary) to be ready before restoring the clocks.
+         // Wait for the regulator (and booster if necessary) to be ready before restoring the clocks.  Note
+         // that the booster clock is also the wake-up clock by design, so that clock is running already.
          //
          do
          {
             PWR->VOSR = pwrVosrSave;
          } while (PWR->VOSR != pwrVosrSave);
-
-         uint32_t duration = DWT->CYCCNT - captureBefore;
-
-         //      If we're attaching the debugger after collecting min/max data without the debugger, then
-         // don't let the debugger spoil the data by letting the application run a little bit (under the
-         // debugger) during debug start.
-         //
-         if (xTaskGetTickCount() > pdMS_TO_TICKS(5000))
-         {
-            if (duration < minTime) minTime = duration;
-            if (duration > maxTime) maxTime = duration;
-         }
       }
       #endif
 
-      //      Now restore the selected system clock.  If we've just restarted the PLL above and if we now
-      // select it as the CPU clock, the CPU continues executing instructions on the wake-up clock (HSI or
-      // MSIS) until the PLL is stable, and then the CPU starts using the PLL.
-      //
+      #ifdef SUPPORT_MSI_AT_48MHZ
+      {
+         RCC->ICSCR1 = rccIcscr1Save;  // Safe.  Either RCC_CR_MSISRDY is set here, or RCC_CR_MSISON is clear.
+      }
+      #endif
+
+      RCC->CR = rccCrSave;
       RCC->CFGR1 = rccCfgrSave;
 
       SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
