@@ -276,11 +276,6 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-  //      Correct a bug in CubeMX.  We selected MSIS auto-calibration (not MSIK), but CubeMX fails to set
-  // MSIPLLSEL as required.  So we do it here ourselves -- and *before* PLL mode becomes enabled.
-  //
-  RCC->CR |= RCC_CR_MSIPLLSEL;
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
