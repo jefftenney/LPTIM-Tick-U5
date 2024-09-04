@@ -42,10 +42,14 @@
 //   o Eliminates kernel-time drift caused by rounding the OS tick to a whole number of timer counts.
 //   o Avoids drift and errors found in other LPTIM implementations available from ST or the public domain.
 //   o Detects/reports ticks dropped due to the application masking interrupts (the tick ISR) for too long.
+
+
+// LPTIM Timer Variants from ST
 //
-//      This software is currently adapted for STM32U.  To adapt this software to other STM32 devices, start
-// with the current revision of the original work (see https://github.com/jefftenney/LPTIM-Tick) instead of
-// this adapted version.  This version is enhanced for the STM32U.
+//      This software is currently adapted for STM32U5 but is easily adaptable to (or already compatible with)
+// any STM32 that provides a Type 3 LPTIM peripheral.  As of this writing, only the STM32U family includes the
+// Type 3 LPTIM variant.  For Type 1 and Type 2 LPTIM, please see https://github.com/jefftenney/LPTIM-Tick.
+// To determine which LPTIM variant is in your STM32, see AN4865 from ST.
 
 
 // Terminology
