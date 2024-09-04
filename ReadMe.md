@@ -42,3 +42,9 @@ __Tickless disabled (`configUSE_TICKLESS_IDLE 0`)__
 - Test 1: 1.21mA, no drift
 - Test 2: 1.21mA, no drift
 - Test 3: 1.21mA, no drift
+
+---
+
+## Application Requirements
+
+1. You must ensure that no combination of your application's interrupt handlers and your code in `configPOST_SLEEP_PROCESSING()` can delay the tick ISR more than one tick period.  To help your application meet this requirement, consider setting `configTICK_INTERRUPT_PRIORITY` to `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY`, and make sure to implement `configPOST_SLEEP_PROCESSING()` so it executes quickly.  See [vUlpPostSleepProcessing()](https://github.com/jefftenney/LPTIM-Tick-U5/blob/fd3767fb49fe58f9bcf9655696e823af21f1810d/Core/Src/ulp.c#L170) for an example.
