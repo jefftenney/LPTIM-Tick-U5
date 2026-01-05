@@ -2,14 +2,14 @@
 //
 // STM32U No-Drift FreeRTOS Tick/Tickless via LPTIM
 //
-// Revision: 2022.01.18
+// Revision: 2026.01.05
 // Tabs: None
 // Columns: 110
 // Compiler: gcc (GNU) / armcc (Arm-Keil) / iccarm (IAR)
 // SPDX-License-Identifier: MIT
 
 
-// Copyright 2022 Jeff Tenney <jeff.tenney@gmail.com>
+// Copyright 2026 Jeff Tenney <jeff.tenney@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 // associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -626,6 +626,31 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
 //
 void LPTIM_IRQHandler( void )
 {
+   //      Check for the CMP1OK interrupt before checking for a compare match (CC1IF).  The CMP sync mechanism
+   // can cause us to miss CMP1IF events, so we always look for a missed CMPM event *after* the sync mechanism
+   // finishes.
+   //
+   if (LPTIM->ISR & LPTIM_ISR_CMP1OK)
+   {
+      //      Acknowledge and clear the CMP1OK event.
+      //
+      LPTIM->ICR = LPTIM_ICR_CMP1OKCF;
+
+      //      If there is a "pending" write operation to CCR1, do it now.  Otherwise, make note that the write
+      // is now complete.  Remember to watch for CCR1 set to 0 when usIdealCmp is 0xFFFF.  There's no pending
+      // write in that case.
+      //
+      if ((uint16_t)(LPTIM->CCR1 - usIdealCmp) > 1UL)
+      {
+         LPTIM->CCR1 = usIdealCmp == 0xFFFF ? 0 : usIdealCmp; // never write 0xFFFF to CCR1 (HW rule)
+         // isCmpWriteInProgress = pdTRUE;  // already true here in the handler for write completed
+      }
+      else
+      {
+         isCmpWriteInProgress = pdFALSE;
+      }
+   }
+
    //      Whether we are running this ISR for a CMP1OK interrupt or a CC1IF interrupt (or both), we need to
    // see if it's time for a tick.  Think of it as interrupt-induced polling.  The synchronization mechanism
    // that controls writes to CCR1 can cause us to miss CC1IF events or to delay them while we wait to write
@@ -744,32 +769,6 @@ void LPTIM_IRQHandler( void )
       portENABLE_INTERRUPTS();
 
       portYIELD_FROM_ISR(xWasHigherPriorityTaskWoken);
-   }
-
-
-   //      Now that we've given as much time as possible for any CCR1 write to be finished, see if it has
-   // finished.  We may have a new value to write after handling CC1IF above.  Handling CMP1OK last in this
-   // ISR isn't very important, but it is a slight optimization over other ordering.
-   //
-   if (LPTIM->ISR & LPTIM_ISR_CMP1OK)
-   {
-      //      Acknowledge and clear the CMP1OK event.
-      //
-      LPTIM->ICR = LPTIM_ICR_CMP1OKCF;
-
-      //      If there is a "pending" write operation to CCR1, do it now.  Otherwise, make note that the write
-      // is now complete.  Remember to watch for CCR1 set to 0 when usIdealCmp is 0xFFFF.  There's no pending
-      // write in that case.
-      //
-      if ((uint16_t)(LPTIM->CCR1 - usIdealCmp) > 1UL)
-      {
-         LPTIM->CCR1 = usIdealCmp == 0xFFFF ? 0 : usIdealCmp; // never write 0xFFFF to CCR1 (HW rule)
-         // isCmpWriteInProgress = pdTRUE;  // already true here in the handler for write completed
-      }
-      else
-      {
-         isCmpWriteInProgress = pdFALSE;
-      }
    }
 }
 
