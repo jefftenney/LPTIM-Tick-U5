@@ -627,8 +627,8 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
 void LPTIM_IRQHandler( void )
 {
    //      Check for the CMP1OK interrupt before checking for a compare match (CC1IF).  The CMP sync mechanism
-   // can cause us to miss CMP1IF events, so we always look for a missed CMPM event *after* the sync mechanism
-   // finishes.
+   // can cause us to miss CMP1IF events, so we always look for a missed CMP1IF event *after* the sync
+   // mechanism finishes.
    //
    if (LPTIM->ISR & LPTIM_ISR_CMP1OK)
    {
