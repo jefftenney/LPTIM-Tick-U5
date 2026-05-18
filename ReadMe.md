@@ -48,7 +48,7 @@ __Tickless disabled (`configUSE_TICKLESS_IDLE 0`)__
 ## Integrating lptimTick.c into your project
 
 1. Add [lptimTick.c](https://github.com/jefftenney/LPTIM-Tick-U5/blob/main/Core/Src/lptimTick.c) to your project folder, configuration, and/or makefile.
-1. In FreeRTOSConfig.h, define `configUSE_TICKLESS_IDLE` to `2`, and eliminate the preprocessor definition for `xPortSysTickHandler`.  If using LSI instead of LSE, define `configTICK_USES_LSI` and `configLPTIM_REF_CLOCK_HZ` (typically `32000` or `37000`), too.
+1. In FreeRTOSConfig.h, define `configUSE_TICKLESS_IDLE` to `2`.  If using LSI instead of LSE, define `configTICK_USES_LSI` and `configLPTIM_REF_CLOCK_HZ` (typically `32000` or `37000`), too.
 1. Update the [#include](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L32) for your MCU.
 1. Update the LPTIM [instance selection](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L239-L241).  LPTIM1 is the default.
 1. Update the [initialization code](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L259-L264) that is specific to both the MCU family and the LPTIM instance.
