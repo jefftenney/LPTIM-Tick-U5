@@ -45,6 +45,16 @@ __Tickless disabled (`configUSE_TICKLESS_IDLE 0`)__
 
 ---
 
+## Integrating lptimTick.c into your project
+
+1. Add [lptimTick.c](https://github.com/jefftenney/LPTIM-Tick-U5/blob/main/Core/Src/lptimTick.c) to your project folder, configuration, and/or makefile.
+1. In FreeRTOSConfig.h, define `configUSE_TICKLESS_IDLE` to `2`, and eliminate the preprocessor definition for `xPortSysTickHandler`.  If using LSI instead of LSE, define `configTICK_USES_LSI` and `configLPTIM_REF_CLOCK_HZ` (typically `32000` or `37000`), too.
+1. Update the [#include](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L32) for your MCU.
+1. Update the LPTIM [instance selection](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L239-L241).  LPTIM1 is the default.
+1. Update the [initialization code](https://github.com/jefftenney/LPTIM-Tick-U5/blob/bc47d620762292a7f639306615da077f433c5e0c/Core/Src/lptimTick.c#L259-L264) that is specific to both the MCU family and the LPTIM instance.
+
+---
+
 ## Application Requirements
 
 1. You must ensure that no combination of your application's interrupt handlers and your code in `configPOST_SLEEP_PROCESSING()` can delay the tick ISR more than one tick period.  To help your application meet this requirement, consider setting `configTICK_INTERRUPT_PRIORITY` to `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY`, and make sure to implement `configPOST_SLEEP_PROCESSING()` so it executes quickly.  See [vUlpPostSleepProcessing()](https://github.com/jefftenney/LPTIM-Tick-U5/blob/fd3767fb49fe58f9bcf9655696e823af21f1810d/Core/Src/ulp.c#L170) for an example.
